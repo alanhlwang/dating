@@ -1,0 +1,189 @@
+---
+title: "Dating"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(gganimate)
+library(ggplot2)
+library(ggimage)
+library(ggthemes)
+library(maps)
+
+dating <- read_csv("Speed Dating Data 2.csv")
+dating$race[is.na(dating$race)] <- 5
+
+date <- dating   
+  drop_na(from)
+date <- date[!str_detect(date$from, "\\d"),]
+
+locs <- str_replace(us.cities$name, "\\s\\b\\w+", "")
+locs <- c(locs, state.name, us.cities, state.abb)
+
+date <- date[!str_detect(date$from, "\\d"),]
+
+date <- date[date$from %in% locs,]
+
+unique(date$from)
+date$from <- str_replace(date$from, "Chicago", "Illinois")
+date$from <- str_replace(date$from,"MD","Maryland")
+date$from <- str_replace(date$from,"Miami", "Florida")   
+date$from <- str_replace(date$from,"Boston", "Massachusetts")   
+date$from <- str_replace(date$from,"Philadelphia", "Pennsylvania")   
+date$from <- str_replace(date$from,"Houston", "Texas")   
+date$from <- str_replace(date$from,"NJ", "New Jersey")   
+date$from <- str_replace(date$from,"NY", "New York")   
+date$from <- str_replace(date$from,"PA", "Pennsylvania")   
+date$from <- str_replace(date$from,"Cleveland", "Ohio")   
+date$from <- str_replace(date$from,"Atlanta", "Georgia")   
+date$from <- str_replace(date$from,"Berkeley", "California")   
+date$from <- str_replace(date$from,"Baltimore", "Maryland")   
+date$from <- str_replace(date$from,"Seattle", "Washington")   
+date$from <- str_replace(date$from,"Pittsburgh", "Pennsylvania")   
+date$from <- str_replace(date$from,"Manhattan", "New York")   
+date$from <- str_replace(date$from, "Minneapolis", "Minnesota")   
+date$from <- str_replace(date$from, "TN", "Tennessee")
+
+valid <- date %>% 
+  group_by(from) %>% 
+  summarise(n=n()) %>% 
+  filter(n>10)
+US_date <- date[date$from %in% valid$from,]
+write_csv(US_date, "US_States.csv")
+
+```
+
+```{r}
+race_pct <- dating %>% 
+  group_by(race)  %>% 
+  summarise(n=sum(match)/n() * 100)
+
+dating    %>% 
+  select(race, id)
+
+dating    %>% 
+  group_by(race)
+
+
+a <- data.frame(group=c("A","B","C"), values=c(3,2,4), frame=rep('a',3))
+b <- data.frame(group=c("A","B","C"), values=c(5,3,7), frame=rep('b',3))
+data <- rbind(a,b)  
+data
+
+race_pct_new <- race_pct    %>% 
+  mutate(n = n/2)
+
+df <- rbind(race_pct_new, race_pct)
+df <- df %>% 
+  drop_na()
+df$frame <- c(rep("a",5), rep("b",5))
+df$race <- rep(c("Black", "White","Latino","Asian","Other"),2)
+
+
+p <- ggplot(data=df, aes(x=race,y=n, fill = race)) +
+  geom_bar(stat='identity') +
+  ggtitle("Match Percentage by Ethnicity") +
+  xlab("Race") + 
+  ylab("Match Rate (%)") + 
+  # gganimate specific bits:
+  transition_states(
+    frame,
+    transition_length = 1,
+    state_length = 1
+  ) +
+  ease_aes('sine-in-out') 
+
+library(gifski)
+animate(p, renderer = gifski_renderer())
+
+YouGov_summ_Trump
+
+```
+
+
+
+## Match rate where people are from
+```{r}
+library(gganimate)
+library(ggplot2)
+library(plotly)
+library(showtext)
+library(ggimage)
+library(ggthemes)
+library(rjson)
+library(usdata)
+
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+```
+
+```{r}
+age_pct <- dating   %>% 
+  group_by(age)   %>% 
+  summarise(n=sum(match)/n() * 100)
+
+age_pct <- age_pct   %>% 
+  filter(n !=0)
+age_pct <- na.omit(age_pct)
+c <- ggplot(data = age_pct, mapping = aes(x=age, n)) + 
+  geom_line(color = "#90EE90", alpha = 0.9) +
+  geom_area(fill = "#90EE90", alpha = 0.4) +
+  geom_point(color = "#90EE90", alpha = 0.9, size = 3.5)
+  ggtitle("Match Percentage by Age") + 
+  ylab("Match Rate (%)") + 
+  xlab("Age")+
+  transition_reveal(age)
+
+animate(p, renderer = gifski_renderer())
+animate(c, renderer = gifski_renderer())
+
+head(dating)
+dating$from
+  
+```
+
+#### Number of Dates by Rate (more or less preferences?)
+**a0**
+
+
+```{r}
+library(gganimate)
+library(ggplot2)
+library(ggimage)
+library(ggthemes)
+YouGov_summ_Trump
+ggplot(data = YouGov_summ_Biden, 
+       mapping = aes(
+         x=month_date, 
+         y = avg_pct)
+       ) +
+  geom_line(color = "cornflowerblue", 
+            alpha = 0.9) +
+  geom_area(fill = "cornflowerblue", 
+            alpha = 0.3) +
+  geom_image(aes(image = image),
+             size = 0.15) +
+  coord_cartesian(ylim=c(41,51)) +
+  geom_line(data = YouGov_summ_Trump,
+            mapping = aes(
+              x=month_date, y = avg_pct),
+            color = "red", 
+            alpha = 0.9) +
+  geom_area(data = YouGov_summ_Trump, fill = "red", alpha = 0.3) +
+  geom_image(data = YouGov_summ_Trump,aes(image = image),
+             size = 0.15) +
+  theme_fivethirtyeight() +
+  ggtitle("2020 Presidential Election Polls") + 
+  ylab("Result (%)") + 
+  theme(plot.title = element_text(hjust = 0.5, size = 27, face = "bold"),
+        text=element_text(size=16)) +
+  transition_reveal(month_date)
+
+```
+

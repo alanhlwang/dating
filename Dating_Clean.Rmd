@@ -1,0 +1,103 @@
+
+## Clean data for NAs
+```{r}
+rm(list=ls())
+library(tidyverse)
+library(caret)
+
+dating <- read_csv("Speed Dating Data 2.csv")
+df <- dating %>% 
+  group_by(iid) %>% 
+  mutate(match_sum = sum(match),
+         count = n()) %>% 
+  mutate(match_rate = match_sum/count)
+
+sum_na <- function(x) {
+  sum(is.na(x))
+}
+
+  
+num_nas <- apply(df, 2, sum_na)
+
+num_nas
+
+extract <- names(num_nas)[num_nas > 100]
+extract <- c(extract,"from", "career", "field", "match_sum", "match", "count")
+
+clean_df <- df %>% 
+  select(-extract) %>% 
+  drop_na()
+
+clean_df$field_cd <- as.factor(clean_df$field_cd)
+```
+
+## Clean from variable
+
+
+
+## One-Hot Encoding
+```{r}
+library(caret)
+
+dummy <- dummyVars(" ~ .", data=clean_df)
+date_df <- data.frame(predict(dummy, newdata = clean_df))
+
+
+train_i <- createDataPartition(date_df$match_rate, p = 0.8, list = F)
+train_df <- date_df[train_i,]
+test_df <- date_df[-train_i,]
+```
+
+
+```{r}
+library(readxl)
+library(caTools)
+m1 <- lm(match_rate~., data = train_df)
+predictions <- predict(m1, test_df[,-ncol(test_df)])
+
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+set.seed(3333)
+knn_fit <- train(match_rate ~., data = train_df, method = "knn",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+
+svm_fit <- train(match_rate ~., data = train_df, method = "svmLinear",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+
+sl <- 1:length(test_df$match_rate)
+seed <- sample(sl,5)
+predict(knn_fit,test_df[,-ncol(test_df)])[seed]
+test_df$match_rate[seed]
+
+
+
+
+
+knn_fit
+subsets <- c(10,20,30)
+
+ctrl <- rfeControl(functions = lmFuncs,
+                   method = "repeatedcv",
+                   repeats = 5,
+                   verbose = FALSE)
+
+lmProfile <- rfe(x=train_df[,x], y=train_df$match_rate,
+                 sizes = subsets,
+                 rfeControl = ctrl)
+
+predictions <- predict(lmProfile, test_df[,x])
+RMSE(test_df$match_rate, predictions)
+sqrt(sum((test_df$match_rate - predictions)^2)/length(predictions))
+```
+
+```{r}
+head(predictions)
+head(test_df$match_rate)
+
+```
+
+
+
